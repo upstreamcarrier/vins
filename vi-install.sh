@@ -65,7 +65,7 @@ yum -y install mariadb-server php php-mcrypt php-cli php-gd php-curl php-mysql p
   php-odbc php-pear php-xml php-xmlrpc curl curl-devel perl-libwww-perl ImageMagick libxml2 libxml2-devel \
   httpd libpcap libpcap-devel libnet ncurses ncurses-devel screen kernel* mutt glibc.i686 certbot \
   python3-certbot-apache mod_ssl openssl-devel newt-devel libuuid-devel sox sendmail lame-devel htop iftop \
-  perl-File-Which php-opcache libss7 mariadb-devel libss7* libopen* jansson-devel
+  perl-File-Which php-opcache libss7 mariadb-devel libss7* libopen* jansson-devel sqlite-devel
 
 ## PHP Version Check
 log "PHP Version Check"
