@@ -30,6 +30,12 @@ yum -y install epel-release
 yum update -y
 yum groupinstall "Development Tools" -y
 
+# PHP Related Modules
+yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+yum -y install http://rpms.remirepo.net/enterprise/remi-release-8.rpm
+yum -y install yum-utils
+dnf module enable php:remi-7.4
+
 # --- Install Base Packages ---
 yum -y install mariadb-server php php-mcrypt php-cli php-gd php-curl php-mysql php-ldap php-zip php-fileinfo \
   php-opcache wget unzip make patch gcc gcc-c++ subversion readline-devel gd-devel php-mbstring php-imap \
