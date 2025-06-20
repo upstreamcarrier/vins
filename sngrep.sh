@@ -6,7 +6,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Function to install build dependencies
+# Function to install build dependencies (including libpcap-devel)
 install_build_deps() {
     echo "🔧 Installing build dependencies..."
     dnf -y install \
@@ -24,7 +24,7 @@ install_build_deps() {
         flex \
         bison \
         wget \
-        libpcap-devel
+        pkgconfig  # Helps with library detection
 }
 
 # Try installing sngrep via dnf first (fastest method)
@@ -40,6 +40,12 @@ fi
 # Install dependencies
 install_build_deps
 
+# Verify libpcap-devel is installed (critical)
+if ! rpm -q libpcap-devel >/dev/null; then
+    echo "❌ libpcap-devel is missing. Installing now..."
+    dnf -y install libpcap-devel || { echo "❌ Failed to install libpcap-devel"; exit 1; }
+fi
+
 # Clone sngrep (latest version)
 echo "📦 Cloning sngrep from GitHub..."
 cd /tmp
@@ -52,7 +58,17 @@ cd sngrep
 # Build and install
 echo "🛠️ Building sngrep (this may take a minute)..."
 ./bootstrap.sh || { echo "❌ bootstrap.sh failed"; exit 1; }
-./configure || { echo "❌ configure failed (check dependencies!)"; exit 1; }
+
+# Explicitly check for libpcap before configure
+if ! pkg-config --exists libpcap; then
+    echo "❌ libpcap not found by pkg-config. Check libpcap-devel installation."
+    exit 1
+fi
+
+./configure || {
+    echo "❌ configure failed. Check /tmp/sngrep/config.log for details."
+    exit 1
+}
 make || { echo "❌ make failed"; exit 1; }
 make install || { echo "❌ make install failed"; exit 1; }
 
