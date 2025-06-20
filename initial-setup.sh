@@ -19,7 +19,7 @@ yum update -y
 # 2. Install Development Tools & Dependencies
 echo "Installing Development Tools, Git, and Nano..."
 yum groupinstall 'Development Tools' -y
-yum install git nano -y
+yum install git nano htop -y
 yum install kernel* -y
 
 # 3. Set Nano as Default Editor (for all users)
