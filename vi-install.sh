@@ -24,7 +24,17 @@ AGC_CONF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/astgui
 CRONTAB_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/crontab"
 RC_LOCAL_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/rc.local"
 
-# --- System Update ---
+install_perl_module_if_missing() {
+  local module="$1"
+  if ! perl -M"$module" -e1 2>/dev/null; then
+    echo "Installing missing Perl module: $module"
+    cpanm --notest "$module" || cpanm --force "$module"
+  else
+    echo "✅ Perl module $module already installed"
+  fi
+}
+
+# --- System Preparation ---
 yum check-update
 yum -y install epel-release
 yum update -y
@@ -88,16 +98,33 @@ systemctl restart mariadb
 systemctl enable httpd
 systemctl restart httpd
 
-# --- Perl & CPAN Modules ---
-yum -y install perl-CPAN perl-YAML perl-libwww-perl perl-DBI perl-DBD-MySQL perl-GD
-cd /usr/bin && curl -LOk http://xrl.us/cpanm && chmod +x cpanm
-cpanm -f File::HomeDir File::Which CPAN::Meta::Requirements CPAN YAML MD5 Digest::MD5 Digest::SHA1 \
-  Bundle::CPAN DBI DBD::mysql Net::Telnet Time::HiRes Net::Server Switch Mail::Sendmail Unicode::Map Jcode \
-  Spreadsheet::WriteExcel OLE::Storage_Lite Proc::ProcessTable IO::Scalar Spreadsheet::ParseExcel Curses \
-  Getopt::Long Net::Domain Term::ReadKey Term::ANSIColor Spreadsheet::XLSX Spreadsheet::Read LWP::UserAgent \
-  HTML::Entities HTML::Strip HTML::FormatText HTML::TreeBuilder Time::Local MIME::Decoder Mail::POP3Client \
-  Mail::IMAPClient Mail::Message IO::Socket::SSL MIME::Base64 MIME::QuotedPrint Crypt::Eksblowfish::Bcrypt \
-  Crypt::RC4 Text::CSV Text::CSV_XS
+modules=(
+  File::HomeDir File::Which CPAN::Meta::Requirements CPAN YAML MD5 Digest::MD5 Digest::SHA1
+  DBI DBD::mysql Net::Telnet Time::HiRes Net::Server Switch Mail::Sendmail Unicode::Map Jcode
+  Spreadsheet::WriteExcel OLE::Storage_Lite Proc::ProcessTable IO::Scalar Spreadsheet::ParseExcel
+  Curses Getopt::Long Net::Domain Term::ReadKey Term::ANSIColor Spreadsheet::XLSX Spreadsheet::Read
+  LWP::UserAgent HTML::Entities HTML::Strip HTML::FormatText HTML::TreeBuilder Time::Local
+  MIME::Decoder Mail::POP3Client Mail::IMAPClient Mail::Message IO::Socket::SSL MIME::Base64
+  MIME::QuotedPrint Crypt::Eksblowfish::Bcrypt Crypt::RC4 Text::CSV Text::CSV_XS
+  Term::ReadLine::Perl
+)
+
+for mod in "${modules[@]}"; do
+  install_perl_module_if_missing "$mod"
+done
+
+echo "✅ Perl modules installed"
+
+# # --- Perl & CPAN Modules ---
+# yum -y install perl-CPAN perl-YAML perl-libwww-perl perl-DBI perl-DBD-MySQL perl-GD
+# cd /usr/bin && curl -LOk http://xrl.us/cpanm && chmod +x cpanm
+# cpanm -f File::HomeDir File::Which CPAN::Meta::Requirements CPAN YAML MD5 Digest::MD5 Digest::SHA1 \
+#   Bundle::CPAN DBI DBD::mysql Net::Telnet Time::HiRes Net::Server Switch Mail::Sendmail Unicode::Map Jcode \
+#   Spreadsheet::WriteExcel OLE::Storage_Lite Proc::ProcessTable IO::Scalar Spreadsheet::ParseExcel Curses \
+#   Getopt::Long Net::Domain Term::ReadKey Term::ANSIColor Spreadsheet::XLSX Spreadsheet::Read LWP::UserAgent \
+#   HTML::Entities HTML::Strip HTML::FormatText HTML::TreeBuilder Time::Local MIME::Decoder Mail::POP3Client \
+#   Mail::IMAPClient Mail::Message IO::Socket::SSL MIME::Base64 MIME::QuotedPrint Crypt::Eksblowfish::Bcrypt \
+#   Crypt::RC4 Text::CSV Text::CSV_XS
 
 # Install Term::ReadLine::Perl safely
 cpanm --notest Term::ReadLine::Perl || cpanm --force Term::ReadLine::Perl
