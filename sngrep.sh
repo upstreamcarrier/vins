@@ -23,7 +23,8 @@ install_build_deps() {
         libtool \
         flex \
         bison \
-        wget
+        wget \
+        libpcap-devel
 }
 
 # Try installing sngrep via dnf first (fastest method)
