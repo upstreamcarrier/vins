@@ -188,8 +188,41 @@ mkdir -p /tmp/eaccelerator && chmod 0777 /tmp/eaccelerator
 wget -O /etc/httpd/conf/httpd.conf "$HTTPD_CONF_URL"
 systemctl restart httpd
 
+log "Installing dahdi"
+#new one
+cd /usr/src/
+wget https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz
+tar xzf dahdi-linux-complete-3.1.0+3.1.0.tar.gz
+cd /usr/src/dahdi-linux-complete-3.1.0+3.1.0/
+sed -i '/#include <linux\/pci-aspm.h>/d' /usr/src/dahdi-linux-complete-3.1.0+3.1.0/linux/include/dahdi/kernel.h
+sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
+make all
+make install
+make install-config
+
+yum install dahdi-tools-libs
+
+cd tools
+make clean
+make
+make install
+make install-config
+
+modprobe dahdi
+modprobe dahdi_dummy
+make config
+systemctl restart dahdi
+
+cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf # or download from Repo https://raw.githubusercontent.com/upstreamcarrier/vins/main/system.conf
+systemctl restart dahdi
+systemctl status dahdi
+/usr/sbin/dahdi_cfg -vvvvvvvvvvvvv
+
+log "Check dahdi status above "
+
 # --- Install LibPRI ---
-log "Compiling LibPRI"
+log "Compiling LibPRI & installing dahdi-tools-libs "
+yum install dahdi-tools-libs
 cd /usr/src
 curl -LO "$LIBPRI_URL"
 tar -xvzf libpri-1.6.1.tar.gz
