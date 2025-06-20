@@ -327,6 +327,7 @@ svn checkout svn://svn.eflo.net/agc_2-X/trunk
 cd trunk
 
 # --- Configure MySQL ---
+log "Configuring MySQL"
 mysql -u root -p"$MYSQL_ROOT_PASS" << EOF
 CREATE DATABASE asterisk DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 CREATE USER 'cron'@'localhost' IDENTIFIED BY '1234';
@@ -342,7 +343,9 @@ SOURCE /usr/src/astguiclient/trunk/extras/first_server_install.sql;
 UPDATE servers SET asterisk_version='${AST_VERSION}';
 EOF
 
-# --- Configure Vicidial ---
+log "MYSQL Configured"
+
+y# --- Configure Vicidial ---
 log "Configure Vicidial"
 wget -O /etc/astguiclient.conf "$AGC_CONF_URL"
 sed -i "s/SERVERIP/$SERVER_IP/g" /etc/astguiclient.conf
