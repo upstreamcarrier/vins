@@ -211,8 +211,6 @@ make install-config
 modprobe dahdi
 modprobe dahdi_dummy
 make config
-systemctl restart dahdi
-
 cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf # or download from Repo https://raw.githubusercontent.com/upstreamcarrier/vins/main/system.conf
 systemctl restart dahdi
 systemctl status dahdi
