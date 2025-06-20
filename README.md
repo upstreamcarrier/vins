@@ -18,6 +18,7 @@ This script automates initial server configuration on Rocky Linux, handling syst
 
 ## Installation
 ```bash
+Git clone: https://github.com/upstreamcarrier/vins.git
 curl -O https://example.com/system_setup.sh
 chmod +x system_setup.sh
 ```
