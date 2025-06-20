@@ -1,0 +1,165 @@
+#!/bin/bash
+
+set -e
+
+# === VICIdial Installation Script for CentOS 7 with WebRTC Support ===
+
+# --- Configurable Variables ---
+AST_VERSION="13.29.2"
+MYSQL_ROOT_PASS=""
+SERVER_IP="$(hostname -I | awk '{print $1}')"
+
+# --- URLs ---
+ASTERISK_PERL_URL="https://github.com/upstreamcarrier/vins/raw/main/dependancies/asterisk-perl-0.08.tar.gz"
+SIPSAK_URL="http://download.vicidial.com/required-apps/sipsak-0.9.6-1.tar.gz"
+LAME_URL="http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz"
+JANSSON_URL="http://www.digip.org/jansson/releases/jansson-2.5.tar.gz"
+PHP_INI_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/php.ini"
+HTTPD_CONF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/httpd.conf"
+DAHDI_URL="https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz"
+LIBPRI_URL="https://downloads.asterisk.org/pub/telephony/libpri/libpri-1.6.1.tar.gz"
+ASTERISK_URL="http://download.vicidial.com/required-apps/asterisk-${AST_VERSION}-vici.tar.gz"
+MY_CNF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/heads/main/my.cnf"
+AGC_CONF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/astguiclient.conf"
+CRONTAB_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/crontab"
+RC_LOCAL_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/rc.local"
+
+# --- System Update ---
+yum check-update
+yum -y install epel-release
+yum update -y
+yum groupinstall "Development Tools" -y
+
+# --- Install Base Packages ---
+yum -y install mariadb-server php php-mcrypt php-cli php-gd php-curl php-mysql php-ldap php-zip php-fileinfo \
+  php-opcache wget unzip make patch gcc gcc-c++ subversion readline-devel gd-devel php-mbstring php-imap \
+  php-odbc php-pear php-xml php-xmlrpc curl curl-devel perl-libwww-perl ImageMagick libxml2 libxml2-devel \
+  httpd libpcap libpcap-devel libnet ncurses ncurses-devel screen kernel* mutt glibc.i686 certbot \
+  python3-certbot-apache mod_ssl openssl-devel newt-devel libuuid-devel sox sendmail lame-devel htop iftop \
+  perl-File-Which php-opcache libss7 mariadb-devel libss7* libopen* jansson-devel
+
+## PHP Version Check
+PHP_VERSION=$(php -v 2>/dev/null | grep -m 1 "^PHP")
+echo "Detected PHP Version: $PHP_VERSION"
+
+# --- Start and Configure MariaDB ---
+systemctl start mariadb
+mysql_secure_installation
+cp /etc/my.cnf /etc/my.cnf.bak
+wget -O /etc/my.cnf "$MY_CNF_URL"
+mkdir -p /var/log/mysqld
+touch /var/log/mysqld/slow-queries.log
+chown -R mysql:mysql /var/log/mysqld
+systemctl enable mariadb
+systemctl restart mariadb
+
+# --- Configure Apache ---
+systemctl enable httpd
+systemctl restart httpd
+
+# --- Perl & CPAN Modules ---
+yum -y install perl-CPAN perl-YAML perl-libwww-perl perl-DBI perl-DBD-MySQL perl-GD
+cd /usr/bin && curl -LOk http://xrl.us/cpanm && chmod +x cpanm
+cpanm -f File::HomeDir File::Which CPAN::Meta::Requirements CPAN YAML MD5 Digest::MD5 Digest::SHA1 readline --force \
+  Bundle::CPAN DBI DBD::mysql Net::Telnet Time::HiRes Net::Server Switch Mail::Sendmail Unicode::Map Jcode \
+  Spreadsheet::WriteExcel OLE::Storage_Lite Proc::ProcessTable IO::Scalar Spreadsheet::ParseExcel Curses Getopt::Long \
+  Net::Domain Term::ReadKey Term::ANSIColor Spreadsheet::XLSX Spreadsheet::Read LWP::UserAgent HTML::Entities \
+  HTML::Strip HTML::FormatText HTML::TreeBuilder Time::Local MIME::Decoder Mail::POP3Client Mail::IMAPClient \
+  Mail::Message IO::Socket::SSL MIME::Base64 MIME::QuotedPrint Crypt::Eksblowfish::Bcrypt Crypt::RC4 Text::CSV Text::CSV_XS
+
+# --- Install Asterisk Perl ---
+cd /usr/src
+curl -LO "$ASTERISK_PERL_URL"
+tar xzf asterisk-perl-0.08.tar.gz
+cd asterisk-perl-0.08
+perl Makefile.PL && make all && make install
+
+# --- Install Sipsak ---
+cd /usr/src
+curl -LO "$SIPSAK_URL"
+tar -zxf sipsak-0.9.6-1.tar.gz
+cd sipsak-0.9.6
+./configure && make && make install
+
+# --- Install Lame ---
+cd /usr/src
+curl -LO "$LAME_URL"
+tar -zxf lame-3.99.5.tar.gz
+cd lame-3.99.5
+./configure && make && make install
+
+# --- Install Jansson ---
+cd /usr/src
+curl -LO "$JANSSON_URL"
+tar -zxf jansson-2.5.tar.gz
+cd jansson-2.5
+./configure && make && make install && ldconfig
+
+# --- PHP Config ---
+wget -O /etc/php.ini "$PHP_INI_URL"
+mkdir -p /tmp/eaccelerator && chmod 0777 /tmp/eaccelerator
+
+# --- Apache Config ---
+wget -O /etc/httpd/conf/httpd.conf "$HTTPD_CONF_URL"
+systemctl restart httpd
+
+# --- Install LibPRI ---
+cd /usr/src
+curl -LO "$LIBPRI_URL"
+tar -xvzf libpri-1.6.1.tar.gz
+cd libpri-1.6.1
+make clean && make && make install
+
+# --- Install Asterisk ---
+cd /usr/src
+curl -LO "$ASTERISK_URL"
+tar xzf asterisk-${AST_VERSION}-vici.tar.gz
+cd asterisk-${AST_VERSION}
+./configure --libdir=/usr/lib --with-gsm=internal --enable-opus --enable-srtp --with-ssl --enable-asteriskssl \
+  --with-pjproject-bundled -with-jansson-bundled
+make menuselect/menuselect menuselect-tree menuselect.makeopts
+menuselect/menuselect --enable app_meetme --enable res_http_websocket --enable res_srtp menuselect.makeopts
+make -j $(nproc) && make install && make samples && make config
+
+# --- Install astguiclient ---
+mkdir -p /usr/src/astguiclient && cd /usr/src/astguiclient
+svn checkout svn://svn.eflo.net/agc_2-X/trunk
+cd trunk
+
+# --- Configure MySQL ---
+mysql -u root -p"$MYSQL_ROOT_PASS" << EOF
+CREATE DATABASE asterisk DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+CREATE USER 'cron'@'localhost' IDENTIFIED BY '1234';
+GRANT SELECT,INSERT,UPDATE,DELETE,LOCK TABLES ON asterisk.* TO 'cron'@'localhost';
+CREATE USER 'custom'@'localhost' IDENTIFIED BY 'custom1234';
+GRANT SELECT,INSERT,UPDATE,DELETE,LOCK TABLES ON asterisk.* TO 'custom'@'localhost';
+GRANT RELOAD ON *.* TO 'cron'@'localhost';
+GRANT RELOAD ON *.* TO 'custom'@'localhost';
+FLUSH PRIVILEGES;
+USE asterisk;
+SOURCE /usr/src/astguiclient/trunk/extras/MySQL_AST_CREATE_tables.sql;
+SOURCE /usr/src/astguiclient/trunk/extras/first_server_install.sql;
+UPDATE servers SET asterisk_version='${AST_VERSION}';
+EOF
+
+# --- Configure Vicidial ---
+wget -O /etc/astguiclient.conf "$AGC_CONF_URL"
+sed -i "s/SERVERIP/$SERVER_IP/g" /etc/astguiclient.conf
+perl install.pl
+sed -i "s/0.0.0.0/127.0.0.1/g" /etc/asterisk/manager.conf
+/usr/share/astguiclient/ADMIN_area_code_populate.pl
+/usr/share/astguiclient/ADMIN_update_server_ip.pl --old-server_ip=10.10.10.15
+
+# --- Crontab ---
+wget -O /root/crontab-file "$CRONTAB_URL"
+crontab /root/crontab-file
+
+# --- rc.local ---
+wget -O /etc/rc.d/rc.local "$RC_LOCAL_URL"
+chmod +x /etc/rc.d/rc.local
+systemctl enable rc-local
+systemctl start rc-local
+
+# --- Final Step ---
+echo "Installation complete. Rebooting..."
+reboot
