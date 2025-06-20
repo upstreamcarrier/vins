@@ -228,18 +228,38 @@ cd libpri-1.6.1
 make clean && make && make install
 
 # --- Install Asterisk ---
-log "Compiling Asterisk v${AST_VERSION}"
+log "Checking for existing Asterisk v${AST_VERSION} source"
 cd /usr/src
-curl -LO "$ASTERISK_URL"
-tar xzf asterisk-${AST_VERSION}-vici.tar.gz
-cd asterisk-${AST_VERSION}
-./configure --libdir=/usr/lib --with-gsm=internal --enable-opus --enable-srtp --with-ssl --enable-asteriskssl \
-  --with-pjproject-bundled -with-jansson-bundled
-make menuselect/menuselect menuselect-tree menuselect.makeopts
-menuselect/menuselect --enable app_meetme --enable res_http_websocket --enable res_srtp menuselect.makeopts
-make -j $(nproc) && make install && make samples && make config
 
-echo "✅ INFO: Asterisk compiled and installed"
+if [ ! -f "asterisk-${AST_VERSION}-vici.tar.gz" ]; then
+  log "Downloading Asterisk source tarball..."
+  curl -LO "$ASTERISK_URL"
+else
+  log "Asterisk tarball already exists, skipping download"
+fi
+
+if [ ! -d "asterisk-${AST_VERSION}" ]; then
+  log "Extracting Asterisk source..."
+  tar xzf "asterisk-${AST_VERSION}-vici.tar.gz"
+else
+  log "Asterisk source already extracted, skipping extraction"
+fi
+
+if ! command -v asterisk >/dev/null || ! asterisk -V | grep -q "${AST_VERSION}"; then
+  log "Compiling and installing Asterisk v${AST_VERSION}..."
+  cd "asterisk-${AST_VERSION}"
+  ./configure --libdir=/usr/lib --with-gsm=internal --enable-opus --enable-srtp --with-ssl --enable-asteriskssl \
+    --with-pjproject-bundled --with-jansson-bundled
+  make menuselect/menuselect menuselect-tree menuselect.makeopts
+  menuselect/menuselect --enable app_meetme --enable res_http_websocket --enable res_srtp menuselect.makeopts
+  make -j $(nproc)
+  make install
+  make samples
+  make config
+  log "✅ Asterisk ${AST_VERSION} compiled and installed"
+else
+  log "Asterisk ${AST_VERSION} is already installed, skipping build"
+fi
 
 # --- Install astguiclient ---
 log "Installing astguiclient"
