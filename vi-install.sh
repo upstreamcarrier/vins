@@ -102,6 +102,8 @@ cpanm -f File::HomeDir File::Which CPAN::Meta::Requirements CPAN YAML MD5 Digest
 # Install Term::ReadLine::Perl safely
 cpanm --notest Term::ReadLine::Perl || cpanm --force Term::ReadLine::Perl
 
+echo "✅ INFO: Perl modules installed"
+
 # --- Install Asterisk Perl ---
 cd /usr/src
 curl -LO "$ASTERISK_PERL_URL"
@@ -156,6 +158,8 @@ make menuselect/menuselect menuselect-tree menuselect.makeopts
 menuselect/menuselect --enable app_meetme --enable res_http_websocket --enable res_srtp menuselect.makeopts
 make -j $(nproc) && make install && make samples && make config
 
+echo "✅ INFO: Asterisk compiled and installed"
+
 # --- Install astguiclient ---
 mkdir -p /usr/src/astguiclient && cd /usr/src/astguiclient
 svn checkout svn://svn.eflo.net/agc_2-X/trunk
@@ -196,5 +200,5 @@ systemctl enable rc-local
 systemctl start rc-local
 
 # --- Final Step ---
-echo "Installation complete. Rebooting..."
+echo "✅ INFO: VICIdial installation complete. Rebooting..."
 reboot
