@@ -23,13 +23,18 @@ LAME_URL="http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.ta
 JANSSON_URL="http://www.digip.org/jansson/releases/jansson-2.5.tar.gz"
 PHP_INI_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/php.ini"
 HTTPD_CONF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/httpd.conf"
-DAHDI_URL="https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz"
+# DAHDI_URL="https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz"
 LIBPRI_URL="https://downloads.asterisk.org/pub/telephony/libpri/libpri-1.6.1.tar.gz"
 ASTERISK_URL="http://download.vicidial.com/required-apps/asterisk-${AST_VERSION}-vici.tar.gz"
 MY_CNF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/heads/main/my.cnf"
 AGC_CONF_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/astguiclient.conf"
 CRONTAB_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/crontab"
 RC_LOCAL_URL="https://raw.githubusercontent.com/upstreamcarrier/vins/main/rc.local"
+DAHDI_VERSION="3.1.0"
+DAHDI_TARBALL="dahdi-linux-complete-3.1.0+3.1.0.tar.gz"
+DAHDI_URL="https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz"
+DAHDI_DIR="dahdi-linux-complete-${DAHDI_VERSION}+${DAHDI_VERSION}"
+
 
 install_perl_module_if_missing() {
   local module="$1"
@@ -188,35 +193,89 @@ mkdir -p /tmp/eaccelerator && chmod 0777 /tmp/eaccelerator
 wget -O /etc/httpd/conf/httpd.conf "$HTTPD_CONF_URL"
 systemctl restart httpd
 
-log "Installing dahdi"
-#new one
+# log "Installing dahdi"
+# #new one
+# cd /usr/src/
+# wget https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz
+# tar xzf dahdi-linux-complete-3.1.0+3.1.0.tar.gz
+# cd /usr/src/dahdi-linux-complete-3.1.0+3.1.0/
+# sed -i '/#include <linux\/pci-aspm.h>/d' /usr/src/dahdi-linux-complete-3.1.0+3.1.0/linux/include/dahdi/kernel.h
+# sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
+# make all
+# make install
+# make install-config
+
+# yum -y install dahdi-tools-libs
+
+# cd tools
+# make clean
+# make
+# make install
+# make install-config
+
+# modprobe dahdi
+# modprobe dahdi_dummy
+# make config
+# cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf # or download from Repo https://raw.githubusercontent.com/upstreamcarrier/vins/main/system.conf
+# systemctl restart dahdi
+# systemctl status dahdi
+# /usr/sbin/dahdi_cfg -vvvvvvvvvvvvv
+
+# log "Check dahdi status above "
+
+# idemp
+
 cd /usr/src/
-wget https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.1.0%2B3.1.0.tar.gz
-tar xzf dahdi-linux-complete-3.1.0+3.1.0.tar.gz
-cd /usr/src/dahdi-linux-complete-3.1.0+3.1.0/
-sed -i '/#include <linux\/pci-aspm.h>/d' /usr/src/dahdi-linux-complete-3.1.0+3.1.0/linux/include/dahdi/kernel.h
-sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
-make all
-make install
-make install-config
 
-yum -y install dahdi-tools-libs
+if [ ! -f "$DAHDI_TARBALL" ]; then
+  log "Downloading DAHDI source..."
+  wget "$DAHDI_URL"
+else
+  log "DAHDI tarball already exists, skipping download"
+fi
 
-cd tools
-make clean
-make
-make install
-make install-config
+if [ ! -d "$DAHDI_DIR" ]; then
+  log "Extracting DAHDI..."
+  tar xzf "$DAHDI_TARBALL"
+else
+  log "DAHDI source already extracted, skipping"
+fi
 
-modprobe dahdi
-modprobe dahdi_dummy
-make config
-cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf # or download from Repo https://raw.githubusercontent.com/upstreamcarrier/vins/main/system.conf
-systemctl restart dahdi
-systemctl status dahdi
+if ! modinfo dahdi_dummy &>/dev/null || ! command -v dahdi_cfg &>/dev/null; then
+  log "Compiling and installing DAHDI ${DAHDI_VERSION}..."
+
+  cd "/usr/src/${DAHDI_DIR}"
+  sed -i '/#include <linux\/pci-aspm.h>/d' linux/include/dahdi/kernel.h
+  sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
+
+  make all
+  make install
+  make install-config
+
+  yum -y install dahdi-tools-libs
+
+  cd tools
+  make clean
+  make
+  make install
+  make install-config
+
+  modprobe dahdi
+  modprobe dahdi_dummy
+  make config
+
+  if [ ! -f /etc/dahdi/system.conf ]; then
+    cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf
+  fi
+
+  systemctl restart dahdi
+  log "✅ DAHDI ${DAHDI_VERSION} installed and running"
+else
+  log "DAHDI appears to already be installed and configured — skipping rebuild"
+fi
+
+log "Checking DAHDI status:"
 /usr/sbin/dahdi_cfg -vvvvvvvvvvvvv
-
-log "Check dahdi status above "
 
 # --- Install LibPRI ---
 log "Compiling LibPRI & installing dahdi-tools-libs "
