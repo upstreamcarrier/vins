@@ -3,6 +3,13 @@
 set -e
 
 # === VICIdial Installation Script for CentOS 7 with WebRTC Support ===
+# --- Color Definitions ---
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+log() {
+  echo -e "${GREEN}==> $1${NC}"
+}
 
 # --- Configurable Variables ---
 AST_VERSION="13.29.2"
@@ -35,6 +42,7 @@ install_perl_module_if_missing() {
 }
 
 # --- System Preparation ---
+log "Starting system update and installing prerequisites"
 yum check-update
 yum -y install epel-release
 yum update -y
@@ -55,9 +63,12 @@ yum -y install mariadb-server php php-mcrypt php-cli php-gd php-curl php-mysql p
   perl-File-Which php-opcache libss7 mariadb-devel libss7* libopen* jansson-devel
 
 ## PHP Version Check
+log "PHP Version Check"
 PHP_VERSION=$(php -v 2>/dev/null | grep -m 1 "^PHP")
 echo "Detected PHP Version: $PHP_VERSION"
+log "PHP Version Check $PHP_VERSION"
 
+log "Securing MariaDB"
 # --- Start and Configure MariaDB ---
 systemctl start mariadb
 
@@ -98,6 +109,11 @@ systemctl restart mariadb
 systemctl enable httpd
 systemctl restart httpd
 
+# --- Perl Modules ---
+log "Installing Perl modules"
+yum install -y perl-CPAN perl-YAML perl-libwww-perl perl-DBI perl-DBD-MySQL perl-GD
+cd /usr/bin && curl -LOk http://xrl.us/cpanm && chmod +x cpanm
+
 modules=(
   File::HomeDir File::Which CPAN::Meta::Requirements CPAN YAML MD5 Digest::MD5 Digest::SHA1
   DBI DBD::mysql Net::Telnet Time::HiRes Net::Server Switch Mail::Sendmail Unicode::Map Jcode
@@ -132,6 +148,7 @@ cpanm --notest Term::ReadLine::Perl || cpanm --force Term::ReadLine::Perl
 echo "✅ INFO: Perl modules installed"
 
 # --- Install Asterisk Perl ---
+log "Installing Asterisk Perl bindings"
 cd /usr/src
 curl -LO "$ASTERISK_PERL_URL"
 tar xzf asterisk-perl-0.08.tar.gz
@@ -139,6 +156,7 @@ cd asterisk-perl-0.08
 perl Makefile.PL && make all && make install
 
 # --- Install Sipsak ---
+log "Installing Sipsak"
 cd /usr/src
 curl -LO "$SIPSAK_URL"
 tar -zxf sipsak-0.9.6-1.tar.gz
@@ -146,6 +164,7 @@ cd sipsak-0.9.6
 ./configure && make && make install
 
 # --- Install Lame ---
+log "Installing Lame encoder"
 cd /usr/src
 curl -LO "$LAME_URL"
 tar -zxf lame-3.99.5.tar.gz
@@ -153,6 +172,7 @@ cd lame-3.99.5
 ./configure && make && make install
 
 # --- Install Jansson ---
+log "Installing Jansson JSON Library"
 cd /usr/src
 curl -LO "$JANSSON_URL"
 tar -zxf jansson-2.5.tar.gz
@@ -160,6 +180,7 @@ cd jansson-2.5
 ./configure && make && make install && ldconfig
 
 # --- PHP Config ---
+log "Configuring PHP and Apache"
 wget -O /etc/php.ini "$PHP_INI_URL"
 mkdir -p /tmp/eaccelerator && chmod 0777 /tmp/eaccelerator
 
@@ -168,6 +189,7 @@ wget -O /etc/httpd/conf/httpd.conf "$HTTPD_CONF_URL"
 systemctl restart httpd
 
 # --- Install LibPRI ---
+log "Compiling LibPRI"
 cd /usr/src
 curl -LO "$LIBPRI_URL"
 tar -xvzf libpri-1.6.1.tar.gz
@@ -175,6 +197,7 @@ cd libpri-1.6.1
 make clean && make && make install
 
 # --- Install Asterisk ---
+log "Compiling Asterisk v${AST_VERSION}"
 cd /usr/src
 curl -LO "$ASTERISK_URL"
 tar xzf asterisk-${AST_VERSION}-vici.tar.gz
@@ -188,6 +211,7 @@ make -j $(nproc) && make install && make samples && make config
 echo "✅ INFO: Asterisk compiled and installed"
 
 # --- Install astguiclient ---
+log "Installing astguiclient"
 mkdir -p /usr/src/astguiclient && cd /usr/src/astguiclient
 svn checkout svn://svn.eflo.net/agc_2-X/trunk
 cd trunk
@@ -209,6 +233,7 @@ UPDATE servers SET asterisk_version='${AST_VERSION}';
 EOF
 
 # --- Configure Vicidial ---
+log "Configure Vicidial"
 wget -O /etc/astguiclient.conf "$AGC_CONF_URL"
 sed -i "s/SERVERIP/$SERVER_IP/g" /etc/astguiclient.conf
 perl install.pl
@@ -221,6 +246,7 @@ wget -O /root/crontab-file "$CRONTAB_URL"
 crontab /root/crontab-file
 
 # --- rc.local ---
+log "Installing rc.local"
 wget -O /etc/rc.d/rc.local "$RC_LOCAL_URL"
 chmod +x /etc/rc.d/rc.local
 systemctl enable rc-local
