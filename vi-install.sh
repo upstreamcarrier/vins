@@ -200,7 +200,7 @@ make all
 make install
 make install-config
 
-yum install dahdi-tools-libs
+yum -y install dahdi-tools-libs
 
 cd tools
 make clean
