@@ -50,7 +50,32 @@ echo "Detected PHP Version: $PHP_VERSION"
 
 # --- Start and Configure MariaDB ---
 systemctl start mariadb
-mysql_secure_installation
+
+#mysql_secure_installation
+
+# Start of Automating mysql_secure_installation
+# Set root password and secure installation (non-interactive)
+MYSQL_ROOT_PASSWORD=""
+
+mysql -u root <<EOF
+-- Set root password if it's not already set
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+
+-- Remove anonymous users
+DELETE FROM mysql.user WHERE User='';
+
+-- Disallow remote root login
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+
+-- Remove test database
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+
+-- Reload privilege tables
+FLUSH PRIVILEGES;
+EOF
+
+### End of mysql_secure_installation
 cp /etc/my.cnf /etc/my.cnf.bak
 wget -O /etc/my.cnf "$MY_CNF_URL"
 mkdir -p /var/log/mysqld
