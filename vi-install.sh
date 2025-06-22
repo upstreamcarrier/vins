@@ -11,6 +11,20 @@ log() {
   echo -e "${GREEN}==> $1${NC}"
 }
 
+# --- Arguments ---
+REBUILD=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --rebuild)
+      REBUILD=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1" && exit 1
+      ;;
+  esac
+done
+
 # --- Configurable Variables ---
 AST_VERSION="13.29.2"
 MYSQL_ROOT_PASS=""
@@ -241,38 +255,58 @@ else
   log "DAHDI source already extracted, skipping"
 fi
 
-if ! modinfo dahdi_dummy &>/dev/null || ! command -v dahdi_cfg &>/dev/null; then
-  log "Compiling and installing DAHDI ${DAHDI_VERSION}..."
+# if ! modinfo dahdi_dummy &>/dev/null || ! command -v dahdi_cfg &>/dev/null; then
+#   log "Compiling and installing DAHDI ${DAHDI_VERSION}..."
 
-  cd "/usr/src/${DAHDI_DIR}"
+#   cd "/usr/src/${DAHDI_DIR}"
+#   sed -i '/#include <linux\/pci-aspm.h>/d' linux/include/dahdi/kernel.h
+#   sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
+
+#   make all
+#   make install
+#   make install-config
+
+#   yum -y install dahdi-tools-libs
+
+#   cd tools
+#   make clean
+#   make
+#   make install
+#   make install-config
+
+#   modprobe dahdi
+#   modprobe dahdi_dummy
+#   make config
+
+#   if [ ! -f /etc/dahdi/system.conf ]; then
+#     cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf
+#   fi
+
+#   systemctl restart dahdi
+#   log "✅ DAHDI ${DAHDI_VERSION} installed and running"
+# else
+#   log "DAHDI appears to already be installed and configured — skipping rebuild"
+# fi
+
+if $REBUILD || ! modinfo dahdi_dummy &>/dev/null || ! command -v dahdi_cfg &>/dev/null; then
+  log "Building and installing DAHDI ${DAHDI_VERSION}..."
+  cd "$DAHDI_DIR"
   sed -i '/#include <linux\/pci-aspm.h>/d' linux/include/dahdi/kernel.h
   sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
-
-  make all
-  make install
-  make install-config
-
-  yum -y install dahdi-tools-libs
-
-  cd tools
-  make clean
-  make
-  make install
-  make install-config
-
-  modprobe dahdi
-  modprobe dahdi_dummy
+  make all && make install && make install-config
+  cd tools && make clean && make && make install && make install-config
+  modprobe dahdi && modprobe dahdi_dummy
   make config
-
-  if [ ! -f /etc/dahdi/system.conf ]; then
-    cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf
-  fi
-
+  [ -f /etc/dahdi/system.conf ] || cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf
   systemctl restart dahdi
-  log "✅ DAHDI ${DAHDI_VERSION} installed and running"
+  log "✅ DAHDI ${DAHDI_VERSION} installed"
 else
-  log "DAHDI appears to already be installed and configured — skipping rebuild"
+  log "DAHDI already installed and configured, skipping"
 fi
+
+log "Checking DAHDI status:"
+/usr/sbin/dahdi_cfg -vvvvvvvvvvvvv
+
 
 log "Checking DAHDI status:"
 /usr/sbin/dahdi_cfg -vvvvvvvvvvvvv
@@ -304,9 +338,9 @@ else
   log "Asterisk source already extracted, skipping extraction"
 fi
 
-if ! command -v asterisk >/dev/null || ! asterisk -V | grep -q "${AST_VERSION}"; then
-  log "Compiling and installing Asterisk v${AST_VERSION}..."
-  cd "asterisk-${AST_VERSION}"
+if $REBUILD || ! command -v asterisk >/dev/null || ! asterisk -V | grep -q "$AST_VERSION"; then
+  log "Compiling Asterisk v${AST_VERSION}..."
+  cd "$ASTERISK_DIR"
   ./configure --libdir=/usr/lib --with-gsm=internal --enable-opus --enable-srtp --with-ssl --enable-asteriskssl \
     --with-pjproject-bundled --with-jansson-bundled
   make menuselect/menuselect menuselect-tree menuselect.makeopts
@@ -317,7 +351,7 @@ if ! command -v asterisk >/dev/null || ! asterisk -V | grep -q "${AST_VERSION}";
   make config
   log "✅ Asterisk ${AST_VERSION} compiled and installed"
 else
-  log "Asterisk ${AST_VERSION} is already installed, skipping build"
+  log "Asterisk ${AST_VERSION} already installed, skipping"
 fi
 
 # --- Install astguiclient ---
