@@ -340,7 +340,7 @@ fi
 
 if $REBUILD || ! command -v asterisk >/dev/null || ! asterisk -V | grep -q "$AST_VERSION"; then
   log "Compiling Asterisk v${AST_VERSION}..."
-  cd "$ASTERISK_DIR"
+  cd "asterisk-${AST_VERSION}"
   ./configure --libdir=/usr/lib --with-gsm=internal --enable-opus --enable-srtp --with-ssl --enable-asteriskssl \
     --with-pjproject-bundled --with-jansson-bundled
   make menuselect/menuselect menuselect-tree menuselect.makeopts
