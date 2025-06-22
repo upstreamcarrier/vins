@@ -380,7 +380,7 @@ EOF
 
 log "MYSQL Configured"
 
-y# --- Configure Vicidial ---
+# --- Configure Vicidial ---
 log "Configure Vicidial"
 wget -O /etc/astguiclient.conf "$AGC_CONF_URL"
 sed -i "s/SERVERIP/$SERVER_IP/g" /etc/astguiclient.conf
