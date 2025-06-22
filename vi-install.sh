@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+trap 'echo -e "\033[0;31m⚠️  ERROR at line $LINENO. Continuing...\033[0m"' ERR
 
 # === VICIdial Installation Script for CentOS 7 with WebRTC Support ===
 # --- Color Definitions ---
