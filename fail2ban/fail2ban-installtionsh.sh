@@ -1,3 +1,6 @@
 yum update -y
 yum -y install fail2ban
 wget -O /etc/fail2ban/jail.local https://raw.githubusercontent.com/upstreamcarrier/vins/main/fail2ban/jail.local
+service fail2ban restart
+service fail2ban status
+fail2ban-client status asterisk-iptables
