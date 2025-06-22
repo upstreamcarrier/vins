@@ -391,7 +391,8 @@ sed -i "s/0.0.0.0/127.0.0.1/g" /etc/asterisk/manager.conf
 
 # --- Crontab ---
 wget -O /root/crontab-file "$CRONTAB_URL"
-crontab /root/crontab-file
+grep -Ev '^\s*#|^\s*$' /root/crontab-file > /tmp/clean-crontab && crontab /tmp/clean-crontab
+#crontab /root/crontab-file
 
 # --- rc.local ---
 log "Installing rc.local"
