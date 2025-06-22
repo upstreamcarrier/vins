@@ -1,0 +1,67 @@
+#!/bin/bash
+# This script installs fail2ban and configures it for use with asterisk, ssh,
+#cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+
+#Then add this to /etc/fail2ban/jail.local and discard everything in jail.local
+#Sample config
+[DEFAULT]
+ignoreip = 127.0.0.1,12.X.X.X
+bantime  = 6048000
+findtime = 600
+maxretry = 100
+backend = auto
+
+[asterisk-iptables]
+enabled  = true
+filter   = asterisk
+action   = iptables-allports[name=SIP, protocol=all]
+           sendmail[name=VICIBOX-ASTERISK-DETECTOR, dest=admin@xxxxx.com, sender=vicibox@xxxxx.com]
+logpath  = /var/log/asterisk/messages
+maxretry = 100
+bantime = 6048000
+
+[ssh-iptables]
+enabled  = true
+filter   = sshd
+action   = iptables[name=SSH, port=ssh, protocol=tcp]
+           sendmail[name=VICIBOX-SSH-DETECTOR, dest=yourmail, sender=yourmail]
+logpath  = /var/log/messages
+maxretry = 3
+bantime = 6048000
+
+#[apache-tcpwrapper]
+#enabled  = true
+#filter   = apache-auth
+#action   = iptables-allports[name=apache-auth, port=http, protocol=tcp]
+#           sendmail[name=VICIBOX-APACHE-DETECTOR, dest=yourmail, sender=yourmail]
+#logpath  = /var/log/apache2/error_log
+#maxretry = 3
+
+#[apache-badbots]
+#enabled  = true
+#filter   = apache-badbots
+#action   = iptables-multiport[name=BadBots, port="http,https"]
+#           sendmail[name=VICIBOX-BadBots-DETECTOR, dest=yourmail, sender=yourmail]
+#logpath  = /var/log/apache2/*access_log
+#bantime  = 6048000
+#maxretry = 1
+
+# Jail for more extended banning of persistent abusers
+# !!! WARNING !!!
+#   Make sure that your loglevel specified in fail2ban.conf/.local
+#   is not at DEBUG level -- which might then cause fail2ban to fall into
+#   an infinite loop constantly feeding itself with non-informative lines
+#[recidive]
+#enabled  = true
+#filter   = recidive
+#logpath  = /var/log/fail2ban.log*
+#action   = iptables-allports[name=recidive, protocol=all]
+#          sendmail[name=VICIBOX-BADBOY-DETECTOR, dest=yourmail, sender=yourmail]
+#bantime  = 6048000  ; 10 weeks
+#findtime = 60480000   ; 5 hours
+#findtime = 43200   ; 12 hours
+#maxretry = 5
+
+
+
+
