@@ -11,7 +11,7 @@ backend = auto
 enabled  = true
 filter   = asterisk
 action   = iptables-allports[name=SIP, protocol=all]
-           sendmail[name=VICIBOX-ASTERISK-DETECTOR, dest=admin@xxxxx.com, sender=vicibox@xxxxx.com]
+#           sendmail[name=VICIBOX-ASTERISK-DETECTOR, dest=admin@xxxxx.com, sender=vicibox@xxxxx.com]
 logpath  = /var/log/asterisk/messages
 maxretry = 100
 bantime = 6048000
@@ -20,7 +20,7 @@ bantime = 6048000
 enabled  = true
 filter   = sshd
 action   = iptables[name=SSH, port=ssh, protocol=tcp]
-           sendmail[name=VICIBOX-SSH-DETECTOR, dest=yourmail, sender=yourmail]
+#           sendmail[name=VICIBOX-SSH-DETECTOR, dest=yourmail, sender=yourmail]
 logpath  = /var/log/messages
 maxretry = 3
 bantime = 6048000
