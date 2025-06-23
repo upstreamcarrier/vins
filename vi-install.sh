@@ -389,6 +389,11 @@ sed -i "s/0.0.0.0/127.0.0.1/g" /etc/asterisk/manager.conf
 /usr/share/astguiclient/ADMIN_area_code_populate.pl
 /usr/share/astguiclient/ADMIN_update_server_ip.pl --old-server_ip=10.10.10.15
 
+# Add Recording Config - record.conf
+log "Recording Config - record.conf"
+wget -O /etc/httpd/conf.d/record.conf https://raw.githubusercontent.com/upstreamcarrier/vins/main/record.conf
+log "Recording Config - Added"
+
 # --- Crontab ---
 wget -O /root/crontab-file "$CRONTAB_URL"
 grep -Ev '^\s*#|^\s*$' /root/crontab-file > /tmp/clean-crontab && crontab /tmp/clean-crontab
