@@ -9,6 +9,10 @@ log() {
   echo -e "${GREEN}==> $1${NC}"
 }
 
+log_red() {
+  echo -e "${RED}==> $1${NC}"
+}
+
 log "======== VICIdial System Health Check ========"
 log "Date: $(date '+%Y-%m-%d %H:%M:%S')"
 log "Hostname: $(hostname)"
@@ -57,7 +61,7 @@ print_section "Fail2Ban: asterisk-iptables Jail Status"
 if command -v fail2ban-client >/dev/null 2>&1; then
     fail2ban-client status asterisk-iptables || log "Fail2Ban asterisk-iptables jail not found."
 else
-    log "Fail2Ban not installed."
+    log_red "Fail2Ban not installed."
 fi
 
 # Check DNS / Nameservers
@@ -76,7 +80,7 @@ print_section "Apache (httpd) Service Status"
 if systemctl list-units --type=service | grep -q httpd; then
     systemctl status httpd --no-pager | grep -E 'Active:|Loaded:'
 else
-    log "Apache httpd not installed or not using systemd."
+    log_red "Apache httpd not installed or not using systemd."
 fi
 
 ## Mariadb/Mysql service Status
@@ -87,7 +91,7 @@ if systemctl list-units --type=service | grep -q mariadb; then
 elif systemctl list-units --type=service | grep -q mysql; then
     systemctl status mysql --no-pager | grep -E 'Active:|Loaded:'
 else
-    log "MariaDB or MySQL not installed or not using systemd."
+    log_red "MariaDB or MySQL not installed or not using systemd."
 fi
 
 print_section "MariaDB Process Count"
@@ -106,7 +110,7 @@ print_section "Asterisk Service Status"
 if systemctl list-units --type=service | grep -q asterisk; then
     systemctl status asterisk --no-pager | grep -E 'Active:|Loaded:'
 else
-    log "Asterisk service not found or not using systemd."
+    log_red "Asterisk service not found or not using systemd."
 fi
 
 echo
