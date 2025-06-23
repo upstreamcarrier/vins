@@ -407,5 +407,5 @@ systemctl enable rc-local
 systemctl start rc-local
 
 # --- Final Step ---
-echo "✅ INFO: VICIdial installation complete. Rebooting..."
+log "✅ INFO: VICIdial installation complete. Rebooting..."
 reboot
