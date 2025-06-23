@@ -79,6 +79,28 @@ else
     log "Apache httpd not installed or not using systemd."
 fi
 
+## Mariadb/Mysql service Status
+# systemctl list-units --type=service | grep mariadb.service
+print_section "MariaDB Service Status"
+if systemctl list-units --type=service | grep -q mariadb; then
+    systemctl status mariadb --no-pager | grep -E 'Active:|Loaded:'
+elif systemctl list-units --type=service | grep -q mysql; then
+    systemctl status mysql --no-pager | grep -E 'Active:|Loaded:'
+else
+    log "MariaDB or MySQL not installed or not using systemd."
+fi
+
+print_section "MariaDB Process Count"
+pgrep -c mysqld | awk '{print $1 " MariaDB process(es) running"}'
+
+print_section "MariaDB Connection Count"
+if command -v mysql >/dev/null 2>&1; then
+    mysql -e "SHOW STATUS WHERE variable_name = 'Threads_connected'" 2>/dev/null || \
+    error_log "Could not connect to MariaDB"
+else
+    error_log "mysql client not found"
+fi
+
 echo
 log "======== Health Check Complete ========"
 
