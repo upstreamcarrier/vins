@@ -101,6 +101,14 @@ else
     error_log "mysql client not found"
 fi
 
+# Asterisk service
+print_section "Asterisk Service Status"
+if systemctl list-units --type=service | grep -q asterisk; then
+    systemctl status asterisk --no-pager | grep -E 'Active:|Loaded:'
+else
+    log "Asterisk service not found or not using systemd."
+fi
+
 echo
 log "======== Health Check Complete ========"
 
