@@ -406,6 +406,9 @@ chmod +x /etc/rc.d/rc.local
 systemctl enable rc-local
 systemctl start rc-local
 
+# Clearing history
+cat /dev/null > ~/.bash_history && history -c && exit
+
 # --- Final Step ---
 log "✅ INFO: VICIdial installation complete. Rebooting..."
 reboot
