@@ -296,7 +296,7 @@ fi
 
 if $REBUILD || ! modinfo dahdi_dummy &>/dev/null || ! command -v dahdi_cfg &>/dev/null; then
   log "Building and installing DAHDI ${DAHDI_VERSION}..."
-  cd "$DAHDI_DIR"
+  cd "/usr/src/${DAHDI_DIR}"
   sed -i '/#include <linux\/pci-aspm.h>/d' linux/include/dahdi/kernel.h
   sed -i 's/netif_napi_add(netdev, \&wc->napi, \&wctc4xxp_poll, 64);/netif_napi_add(netdev, \&wc->napi, wctc4xxp_poll);/' linux/drivers/dahdi/wctc4xxp/base.c
   make all && make install && make install-config
