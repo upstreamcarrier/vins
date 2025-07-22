@@ -408,6 +408,7 @@ grep -Ev '^\s*#|^\s*$' /root/crontab-file > /tmp/clean-crontab && crontab /tmp/c
 log "Installing rc.local"
 wget -O /etc/rc.d/rc.local "$RC_LOCAL_URL"
 chmod +x /etc/rc.d/rc.local
+systemctl daemon-reload
 systemctl enable rc-local
 systemctl start rc-local
 
