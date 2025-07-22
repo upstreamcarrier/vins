@@ -304,7 +304,8 @@ if $REBUILD || ! modinfo dahdi_dummy &>/dev/null || ! command -v dahdi_cfg &>/de
   modprobe dahdi && modprobe dahdi_dummy
   make config
   [ -f /etc/dahdi/system.conf ] || cp /etc/dahdi/system.conf.sample /etc/dahdi/system.conf
-  systemctl restart dahdi
+# it can fail sometimes
+#  systemctl restart dahdi
   log "✅ DAHDI ${DAHDI_VERSION} installed"
 else
   log "DAHDI already installed and configured, skipping"
