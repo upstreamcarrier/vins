@@ -74,11 +74,16 @@ yum -y install http://rpms.remirepo.net/enterprise/remi-release-8.rpm
 yum -y install yum-utils
 dnf module enable php:remi-7.4
 
+# Install EPL
+sudo dnf install epel-release -y
+sudo dnf config-manager --set-enabled powertools || sudo dnf config-manager --set-enabled crb
+sudo dnf update -y
+
 # --- Install Base Packages ---
 yum -y install mariadb-server php php-mcrypt php-cli php-gd php-curl php-mysql php-ldap php-zip php-fileinfo \
   php-opcache wget unzip make patch gcc gcc-c++ subversion readline-devel gd-devel php-mbstring php-imap \
   php-odbc php-pear php-xml php-xmlrpc curl curl-devel perl-libwww-perl ImageMagick libxml2 libxml2-devel \
-  httpd libpcap libpcap-devel libnet ncurses ncurses-devel screen kernel* mutt glibc.i686 certbot \
+  httpd libpcap libnet ncurses ncurses-devel screen kernel* mutt glibc.i686 certbot \
   python3-certbot-apache mod_ssl openssl-devel newt-devel libuuid-devel sox sendmail lame-devel htop iftop \
   perl-File-Which php-opcache libss7 mariadb-devel libss7* libopen* jansson-devel sqlite-devel
 
